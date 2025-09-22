@@ -2,8 +2,7 @@ import { Crepe } from "@milkdown/crepe";
 import { Milkdown, useEditor } from "@milkdown/react";
 
 import "@milkdown/crepe/theme/common/style.css";
-import "@milkdown/crepe/theme/frame.css";
-import "@milkdown/theme-tokyo"
+import '@/themes/crep-dark.css'
 
 const markdown = `# Milkdown React Crepe
 

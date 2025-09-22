@@ -1,24 +1,24 @@
 import { render } from 'preact';
-import { LocationProvider, Router, Route } from 'preact-iso';
-
-import { Header } from './components/Header.jsx';
+import { Header, TAB } from './components/Header.jsx';
 import { Home } from './pages/Home/index.jsx';
-import { NotFound } from './pages/_404.jsx';
-import './style.css';
+import { Setting } from './pages/setting.jsx';
 import { MilkdownProvider } from '@milkdown/react';
+import { useSignal } from '@preact/signals';
+
+import './style.css';
+import 'virtual:uno.css'
 
 export function App() {
+  const activeTab = useSignal<TAB>(TAB.editor)
   return (
     <MilkdownProvider>
-      <LocationProvider>
-        <Header />
-        <main>
-          <Router>
-            <Route path="/" component={Home} />
-            <Route default component={NotFound} />
-          </Router>
-        </main>
-      </LocationProvider>
+      <Header activeTab={activeTab.value} setActiveTab={(t: TAB) => activeTab.value = t} />
+      <main class={activeTab.value === TAB.editor ? '' : 'invisible'}>
+        <Home />
+      </main>
+      <main class={activeTab.value === TAB.setting ? '' : 'invisible'}>
+        <Setting />
+      </main>
     </MilkdownProvider>
   );
 }

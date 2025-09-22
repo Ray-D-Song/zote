@@ -1,18 +1,27 @@
-import { useLocation } from 'preact-iso';
+import { Nav } from '@douyinfe/semi-ui';
 
-export function Header() {
-	const { url } = useLocation();
+export enum TAB {
+  editor,
+  setting
+}
 
-	return (
-		<header>
-			<nav>
-				<a href="/" class={url == '/' && 'active'}>
-					Home
-				</a>
-				<a href="/404" class={url == '/404' && 'active'}>
-					404
-				</a>
-			</nav>
-		</header>
-	);
+interface HeaderProps {
+  activeTab: TAB
+  setActiveTab: (t: TAB) => void
+}
+
+export function Header({
+  activeTab,
+  setActiveTab
+}: HeaderProps) {
+
+  return <Nav
+    items={[
+      { itemKey: TAB.editor, text: '编辑器' },
+      { itemKey: TAB.setting, text: '设置' },
+    ]}
+    mode='horizontal'
+    selectedKeys={[activeTab]}
+    onSelect={s => setActiveTab(s.itemKey as TAB)}
+  />
 }
