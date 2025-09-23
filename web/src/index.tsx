@@ -8,7 +8,6 @@ import { ThemeProvider } from './context/themeContext';
 
 import './style.css';
 import 'virtual:uno.css'
-import { ReactNode } from 'preact/compat';
 
 export function App() {
   const activeTab = useSignal<TAB>(TAB.editor)

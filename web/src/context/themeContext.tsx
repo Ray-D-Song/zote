@@ -39,7 +39,7 @@ export const editorThemes: EditorTheme[] = [
   { value: 'vscode-modern', label: 'VSCode Modern' }
 ];
 
-const codeThemeMap = {
+export const codeThemeMap = {
   ['crep']: {
     light: xcodeLight,
     dark: xcodeDark
