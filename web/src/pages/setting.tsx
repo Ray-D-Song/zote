@@ -1,49 +1,33 @@
 import { Select } from '@douyinfe/semi-ui';
-import { useSignal } from '@preact/signals';
-
-const themes = [
-  { value: 'crep', label: 'Crep Light' },
-  { value: 'crep-dark', label: 'Crep Dark' },
-  { value: 'frame', label: 'Frame Light' },
-  { value: 'frame-dark', label: 'Frame Dark' },
-  { value: 'nord', label: 'Nord Light' },
-  { value: 'nord-dark', label: 'Nord Dark' },
-  { value: 'tomorrow', label: 'Tomorrow Light' },
-  { value: 'tomorrow-dark', label: 'Tomorrow Dark' },
-];
+import { useTheme, useEditorTheme } from '../context/themeContext.jsx';
 
 export function Setting() {
-  const currentTheme = useSignal('crep');
-
-  const handleThemeChange = (value: string) => {
-    currentTheme.value = value;
-
-    // Remove existing theme link
-    const existingLink = document.querySelector('link[data-theme]');
-    if (existingLink) {
-      existingLink.remove();
-    }
-
-    // Add new theme link
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `/src/themes/${value}.css`;
-    link.setAttribute('data-theme', value);
-    document.head.appendChild(link);
-  };
+  const { currentTheme, changeTheme, themes } = useTheme()
+  const { currentEditorTheme, changeEditorTheme, editorThemes } = useEditorTheme();
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>设置</h2>
-      <div style={{ marginTop: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px' }}>
-          编辑器主题
+    <div className="p-5">
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">设置</h2>
+      <div className="mt-5">
+        <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          主题
         </label>
         <Select
           value={currentTheme.value}
-          onChange={handleThemeChange}
+          onChange={changeTheme}
           style={{ width: '200px' }}
           optionList={themes}
+        />
+      </div>
+      <div className="mt-5">
+        <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          编辑器主题
+        </label>
+        <Select
+          value={currentEditorTheme}
+          onChange={changeEditorTheme}
+          style={{ width: '200px' }}
+          optionList={editorThemes}
         />
       </div>
     </div>

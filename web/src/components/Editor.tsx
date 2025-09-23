@@ -1,20 +1,26 @@
 import { Crepe } from "@milkdown/crepe";
 import { Milkdown, useEditor } from "@milkdown/react";
+import { oneDark } from '@codemirror/theme-one-dark'
 
 import "@milkdown/crepe/theme/common/style.css";
-import '@/themes/crep-dark.css'
-
-const markdown = `# Milkdown React Crepe
-
-> You're scared of a world where you're needed.
-
-This is a demo for using Crepe with **React**.`;
+import { usePersistSignal } from '@/hooks/usePersistSignal';
 
 export default function MilkdownEditor() {
+  const mdContent = usePersistSignal('mdContent', '', 'localStorage')
   useEditor((root) => {
     const crepe = new Crepe({
       root,
-      defaultValue: markdown,
+      defaultValue: mdContent.value,
+      featureConfigs: {
+        [Crepe.Feature.CodeMirror]: {
+          theme: oneDark
+        }
+      }
+    });
+    crepe.on((listener) => {
+      listener.markdownUpdated((_, markdown) => {
+        mdContent.value = markdown
+      });
     });
     return crepe;
   }, []);

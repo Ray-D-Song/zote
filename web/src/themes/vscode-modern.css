@@ -1,0 +1,31 @@
+.milkdown {
+  --crepe-color-background: #ffffff;
+  --crepe-color-on-background: #333333;
+  --crepe-color-surface: #f8f8f8;
+  --crepe-color-surface-low: #f0f0f0;
+  --crepe-color-on-surface: #333333;
+  --crepe-color-on-surface-variant: #616161;
+  --crepe-color-outline: #c8c8c8;
+  --crepe-color-primary: #0078d4;
+  --crepe-color-secondary: #f5f5f5;
+  --crepe-color-on-secondary: #333333;
+  --crepe-color-inverse: #333333;
+  --crepe-color-on-inverse: #ffffff;
+  --crepe-color-inline-code: #d73a49;
+  --crepe-color-error: #e74c3c;
+  --crepe-color-hover: #e8e8e8;
+  --crepe-color-selected: #cce7ff;
+  --crepe-color-inline-area: #f5f5f5;
+
+  --crepe-font-title: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --crepe-font-default: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --crepe-font-code:
+    'Cascadia Code', 'JetBrains Mono', Menlo, Monaco, 'Courier New', Courier, monospace;
+
+  --crepe-shadow-1:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.1),
+    0px 1px 3px 1px rgba(0, 0, 0, 0.08);
+  --crepe-shadow-2:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.1),
+    0px 2px 6px 2px rgba(0, 0, 0, 0.08);
+}
