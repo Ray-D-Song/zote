@@ -1,20 +1,26 @@
 package main
 
 import (
-	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
+
+	"github.com/ray-d-song/zote/server/internal/static"
 )
 
-func index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello World")
-}
-
 func main() {
-	http.HandleFunc("/", index)
-	fmt.Println("Server is running on http://localhost:18080")
-	err := http.ListenAndServe(":18080", nil)
+	api := http.NewServeMux()
+	api.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+	webDist, err := fs.Sub(static.WebDist, "web-dist")
 	if err != nil {
 		log.Fatalf("Server fail to start: %v", err)
 	}
+	fileServer := http.FileServer(http.FS(webDist))
+	root := http.NewServeMux()
+	root.Handle("/api/v1", api)
+	root.Handle("/", fileServer)
+	log.Println("listen http://localhost:18080")
+	log.Fatal(http.ListenAndServe(":18080", root))
 }

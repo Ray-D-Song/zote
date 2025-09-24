@@ -5,7 +5,7 @@ TARGET = bin/server
 SRCS = server/cmd/main.go
 
 build:
-	$(GO_BUILD) -o $(TARGET) $(SRCS)
+	cd server && $(GO_BUILD) -o ../$(TARGET) cmd/main.go
 
 .PHONY: clean
 clean:

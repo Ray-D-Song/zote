@@ -1,0 +1,78 @@
+name: Deploy to Self-Hosted
+
+on:
+  repository_dispatch:
+    types: [deploy]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: false
+        default: 'latest'
+
+env:
+  CONTAINER_NAME: zote
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Set image tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "IMAGE_TAG=${{ github.event.client_payload.image_tag }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [[ "${{ github.event.inputs.image_tag }}" == "latest" || "${{ github.event.inputs.image_tag }}" == "" ]]; then
+              echo "IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+            else
+              echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "IMAGE_TAG=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to Container Registry
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Pull latest image
+        run: |
+          docker pull ${{ steps.vars.outputs.IMAGE_TAG }}
+
+      - name: Stop and remove old container
+        run: |
+          docker stop ${{ env.CONTAINER_NAME }} || true
+          docker rm ${{ env.CONTAINER_NAME }} || true
+
+      - name: Run new container
+        run: |
+          docker run -d \
+            --name ${{ env.CONTAINER_NAME }} \
+            --restart unless-stopped \
+            -p 18080:18080 \
+            ${{ steps.vars.outputs.IMAGE_TAG }}
+
+      - name: Cleanup old images
+        run: |
+          docker image prune -f
+          docker system prune -f --volumes
+
+      - name: Health check
+        run: |
+          echo "Waiting for service to start..."
+          sleep 10
+          curl -f http://localhost:18080/api/v1/health || exit 1
+          echo "Service is healthy!"
+
+      - name: Deployment status
+        run: |
+          echo "🚀 Deployment completed successfully!"
+          echo "📦 Deployed image: ${{ steps.vars.outputs.IMAGE_TAG }}"
+          echo "🌐 Service URL: http://localhost:18080"

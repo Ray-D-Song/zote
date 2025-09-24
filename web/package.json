@@ -30,6 +30,7 @@
 		"typescript": "^5.9.2",
 		"unocss": "^66.5.1",
 		"vite": "^7.0.4",
+		"vite-bundle-analyzer": "^1.2.3",
 		"vite-plugin-semi-theme": "^0.6.0"
 	},
 	"eslintConfig": {

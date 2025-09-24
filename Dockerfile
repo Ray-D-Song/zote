@@ -1,56 +1,55 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Stage 1: Build frontend
+FROM node:22-alpine AS frontend-builder
 
-# Install git and ca-certificates
-RUN apk add --no-cache git ca-certificates
+WORKDIR /app/web
 
-# Set working directory
+# Copy frontend package files
+COPY web/package.json web/yarn.lock ./
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
+# Copy frontend source code
+COPY web ./
+
+# Build frontend (outputs to ../server/internal/static/web-dist)
+RUN yarn build
+
+# Stage 2: Build backend
+FROM golang:1.24-alpine AS backend-builder
+
+# Install make
+RUN apk add --no-cache make
+
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY server/go.mod ./server/
 
-# Download dependencies
-RUN go mod download
+# Download go dependencies (go.sum will be created if needed)
+RUN cd server && go mod download
 
-# Copy source code
-COPY . .
+# Copy entire project (including frontend build from previous stage)
+COPY --from=frontend-builder /app ./
+COPY server ./server/
+COPY Makefile ./
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server ./cmd/server/
+# Build the Go application
+RUN make build
 
-# Final stage
+# Stage 3: Runtime
 FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates tzdata
 
-# Create non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+WORKDIR /root/
 
-# Set working directory
-WORKDIR /app
-
-# Copy binaries from builder stage
-COPY --from=builder /app/server .
-COPY --from=builder /app/cli .
-
-# Copy config files
-COPY --from=builder /app/configs ./configs
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
+# Copy the binary from builder stage
+COPY --from=backend-builder /app/bin/server .
 
 # Expose port
-EXPOSE 8080
+EXPOSE 18080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
-
-# Run the application
+# Run the binary
 CMD ["./server"]

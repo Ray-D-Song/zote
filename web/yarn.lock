@@ -5801,6 +5801,11 @@ vfile@^6.0.0:
     "@types/unist" "^3.0.0"
     vfile-message "^4.0.0"
 
+vite-bundle-analyzer@^1.2.3:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/vite-bundle-analyzer/-/vite-bundle-analyzer-1.2.3.tgz#5a216544a4fb41d571f8cc0cd78adccfdff2ec96"
+  integrity sha512-8nhwDGHWMKKgg6oegAOpDgTT7/yzTVzeYzLF4y8WBJoYu9gO7h29UpHiQnXD2rAvfQzDy5Wqe/Za5cgqhnxi5g==
+
 vite-plugin-semi-theme@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/vite-plugin-semi-theme/-/vite-plugin-semi-theme-0.6.0.tgz#57963638fbd220dcb9e2c574e4abbb01c2fa1d99"
