@@ -1,5 +1,5 @@
 import { Select } from '@douyinfe/semi-ui';
-import { useTheme, useEditorTheme } from '../context/themeContext.jsx';
+import { useTheme, useEditorTheme } from '../context/themeContext.tsx';
 
 export function Setting() {
   const { currentTheme, changeTheme, themes } = useTheme()

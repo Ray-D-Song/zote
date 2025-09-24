@@ -1,7 +1,7 @@
 import { render } from 'preact';
-import { Header, TAB } from './components/Header.jsx';
-import { Home } from './pages/home.jsx';
-import { Setting } from './pages/setting.jsx';
+import { Header, TAB } from './components/Header.tsx';
+import { Home } from './pages/home.tsx';
+import { Setting } from './pages/setting.tsx';
 import { MilkdownProvider } from '@milkdown/react';
 import { useSignal } from '@preact/signals';
 import { ThemeProvider } from './context/themeContext';
