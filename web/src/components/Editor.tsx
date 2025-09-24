@@ -1,6 +1,8 @@
 import { CrepeBuilder } from "@milkdown/crepe/builder";
 import { Milkdown, useEditor } from "@milkdown/react";
-import { $view } from "@milkdown/utils";
+import { $view, insert } from "@milkdown/utils";
+import { commandsCtx } from "@milkdown/core";
+import { clearTextInCurrentBlockCommand } from "@milkdown/preset-commonmark";
 import { linkSchema } from "@milkdown/preset-commonmark";
 import { MarkViewConstructor } from "@milkdown/prose/view";
 import { listenerCtx } from "@milkdown/plugin-listener";
@@ -93,11 +95,25 @@ export default function MilkdownEditor() {
         theme,
         languages
       })
-      .addFeature(blockEdit)
+      .addFeature(blockEdit, {
+        buildMenu: (builder) => {
+          builder.getGroup('text').addItem('new-page', {
+            label: 'New Page',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="256px" height="256px" viewBox="0 0 24 24"><path fill="currentColor" d="m16 15l3-3l-1.05-1.075l-1.2 1.2V9h-1.5v3.125l-1.2-1.2L13 12zM4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm0-2h16V6H4zm0 0V6zm1.5-3H7v-4.5h1v3h1.5v-3h1V15H12v-5q0-.425-.288-.712T11 9H6.5q-.425 0-.712.288T5.5 10z"/></svg>',
+            onRun: (ctx) => {
+              const commands = ctx.get(commandsCtx);
+              commands.call(clearTextInCurrentBlockCommand.key);
+              insert('[新页面](./)')(ctx);
+            },
+          })
+        },
+      })
       .addFeature(toolbar)
       .addFeature(cursor)
       .addFeature(linkTooltip)
-      .addFeature(placeholder)
+      .addFeature(placeholder, {
+        text: '输入文本，按 / 启用指令...'
+      })
       .addFeature(latex)
       .addFeature(table)
       .addFeature(imageBlock);
@@ -116,5 +132,18 @@ export default function MilkdownEditor() {
     return builder;
   }, [currentTheme.value, currentEditorTheme, theme]);
 
-  return <Milkdown />;
+  return <section class="relative">
+    <input
+      placeholder="新页面"
+      class="border-none h-48px text-4xl font-600 hover:border-none focus:border-none focus:outline-none bg-transparent absolute z-20
+             left-60px top-40px
+             lg:left-180px lg:top-80px
+             xl:left-240px xl:top-120px
+             dark:text-gray-300 text-black
+             caret-blue-500 dark:caret-blue-400
+             [caret-width:3px]
+             "
+    />
+    <Milkdown />
+  </section>;
 };

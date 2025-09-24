@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_ENVIRONMENT=production
+      - DATABASE_TYPE=sqlite
+      - DATABASE_DSN=/app/data/data.db
+      - LOGGER_LEVEL=info
+      - LOGGER_ENCODING=json
+    volumes:
+      - app_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app_network
+
+volumes:
+  app_data:
+
+networks:
+  app_network:
+    driver: bridge
