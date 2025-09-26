@@ -4,7 +4,9 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/lpar/gzipped"
 	"github.com/ray-d-song/zote/server/internal/static"
 )
 
@@ -17,10 +19,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("Server fail to start: %v", err)
 	}
-	fileServer := http.FileServer(http.FS(webDist))
+	// Use gzipped file server for better large file handling
+	fileServer := gzipped.FileServer(http.FS(webDist))
 	root := http.NewServeMux()
 	root.Handle("/api/v1/", api)
 	root.Handle("/", fileServer)
+
+	// Configure server with proper timeouts
+	server := &http.Server{
+		Addr:           ":18080",
+		Handler:        root,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   120 * time.Second, // Longer for large file downloads
+		IdleTimeout:    120 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1MB
+	}
+
 	log.Println("listen http://localhost:18080")
-	log.Fatal(http.ListenAndServe(":18080", root))
+	log.Fatal(server.ListenAndServe())
 }
