@@ -15,12 +15,15 @@ func main() {
 	api.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
+
 	webDist, err := fs.Sub(static.WebDist, "web-dist")
 	if err != nil {
 		log.Fatalf("Server fail to start: %v", err)
 	}
+
 	// Use gzipped file server for better large file handling
 	fileServer := gziphandler.GzipHandler(http.FileServer(http.FS(webDist)))
+
 	root := http.NewServeMux()
 	root.Handle("/api/v1/", api)
 	root.Handle("/", fileServer)

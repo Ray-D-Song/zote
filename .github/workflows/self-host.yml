@@ -46,6 +46,10 @@ jobs:
         run: |
           docker pull ${{ steps.vars.outputs.IMAGE_TAG }}
 
+      - name: Create or reuse data volume
+        run: |
+          docker volume create zote-data || true
+
       - name: Stop and remove old container
         run: |
           docker stop ${{ env.CONTAINER_NAME }} || true
@@ -57,6 +61,7 @@ jobs:
             --name ${{ env.CONTAINER_NAME }} \
             --restart unless-stopped \
             -p 18080:18080 \
+            -v zote-data:/app/data \
             ${{ steps.vars.outputs.IMAGE_TAG }}
 
       - name: Cleanup old images
