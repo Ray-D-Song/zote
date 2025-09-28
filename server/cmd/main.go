@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lpar/gzipped"
+	"github.com/NYTimes/gziphandler"
 	"github.com/ray-d-song/zote/server/internal/static"
 )
 
@@ -20,7 +20,7 @@ func main() {
 		log.Fatalf("Server fail to start: %v", err)
 	}
 	// Use gzipped file server for better large file handling
-	fileServer := gzipped.FileServer(http.FS(webDist))
+	fileServer := gziphandler.GzipHandler(http.FileServer(http.FS(webDist)))
 	root := http.NewServeMux()
 	root.Handle("/api/v1/", api)
 	root.Handle("/", fileServer)
