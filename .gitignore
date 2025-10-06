@@ -26,3 +26,7 @@ dist-ssr
 bin/
 
 web-dist/
+
+.env
+
+*.db
