@@ -6,8 +6,9 @@ export default defineConfig({
     colors: {
       bg: {
         light: '#ffff',
-        dark: '#1F1E1E'
-      }
-    }
-  }
+        dark: '#1F1E1E',
+      },
+    },
+  },
 })
+

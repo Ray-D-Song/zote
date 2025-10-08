@@ -1,39 +1,44 @@
 {
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"dev": "vite",
-		"build": "vite build",
-		"preview": "vite preview"
-	},
-	"dependencies": {
-		"@douyinfe/semi-ui": "^2.86.0",
-		"@milkdown/crepe": "^7.16.0",
-		"@milkdown/kit": "^7.16.0",
-		"@milkdown/react": "^7.16.0",
-		"@preact/signals": "^2.3.1",
-		"@semi-bot/semi-theme-retroblue": "^1.0.0",
-		"@uiw/codemirror-theme-github": "^4.25.2",
-		"@uiw/codemirror-theme-nord": "^4.25.2",
-		"@uiw/codemirror-theme-vscode": "^4.25.2",
-		"@uiw/codemirror-theme-xcode": "^4.25.2",
-		"preact": "^10.26.9",
-		"thememirror": "^2.0.1"
-	},
-	"devDependencies": {
-		"@iconify-json/lucide": "^1.2.68",
-		"@iconify-json/vscode-icons": "^1.2.30",
-		"@preact/preset-vite": "^2.10.2",
-		"@types/node": "^24.5.2",
-		"eslint": "^9.36.0",
-		"eslint-config-preact": "^2.0.0",
-		"typescript": "^5.9.2",
-		"unocss": "^66.5.1",
-		"vite": "^7.0.4",
-		"vite-bundle-analyzer": "^1.2.3",
-		"vite-plugin-semi-theme": "^0.6.0"
-	},
-	"eslintConfig": {
-		"extends": "preact"
-	}
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@douyinfe/semi-ui": "^2.86.0",
+    "@milkdown/crepe": "^7.16.0",
+    "@milkdown/kit": "^7.16.0",
+    "@milkdown/react": "^7.16.0",
+    "@preact/signals": "^2.3.1",
+    "@semi-bot/semi-theme-retroblue": "^1.0.0",
+    "@uiw/codemirror-theme-github": "^4.25.2",
+    "@uiw/codemirror-theme-nord": "^4.25.2",
+    "@uiw/codemirror-theme-vscode": "^4.25.2",
+    "@uiw/codemirror-theme-xcode": "^4.25.2",
+    "preact": "^10.26.9",
+    "thememirror": "^2.0.1"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.68",
+    "@iconify-json/vscode-icons": "^1.2.30",
+    "@preact/preset-vite": "^2.10.2",
+    "@types/node": "^24.5.2",
+    "eslint": "^9.36.0",
+    "eslint-config-preact": "^2.0.0",
+    "typescript": "^5.9.2",
+    "unocss": "^66.5.1",
+    "vite": "^7.0.4",
+    "vite-bundle-analyzer": "^1.2.3",
+    "vite-plugin-semi-theme": "^0.6.0",
+    "@antfu/eslint-config": "^5.4.1",
+    "@unocss/eslint-plugin": "^66.5.1",
+    "@eslint-react/eslint-plugin": "^1.53.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20"
+  },
+  "eslintConfig": {
+    "extends": "preact"
+  }
 }
