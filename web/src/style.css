@@ -11,17 +11,17 @@ body {
 }
 
 .milkdown .ProseMirror {
-  padding: 120px 60px;
+  padding: 120px 80px;
 }
 
 @media only screen and (min-width: 1024px) {
   .milkdown .ProseMirror {
-    padding: 160px 180px;
+    padding: 160px 90px;
   }
 }
 
 @media only screen and (min-width: 1280px) {
   .milkdown .ProseMirror {
-    padding: 190px 240px;
+    padding: 190px 120px;
   }
 }

@@ -12,7 +12,7 @@ import 'virtual:uno.css'
 
 export function App() {
   const activeTab = useSignal<TAB>(TAB.editor)
-  if (true) {
+  if (false) {
     return <Login />
   }
 
