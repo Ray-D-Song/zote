@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 	"github.com/ray-d-song/zote/server/internal/static"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
@@ -29,7 +31,14 @@ var (
 	initErr      error
 	appConfig    = &AppConfig{}
 	slogInstance *slog.Logger
+	logFile      *os.File
+	sessionName  = "zote-session"
+	sessionStore *sessions.CookieStore
+	authKey      = make([]byte, 32)
+	encryptKey   = make([]byte, 32)
 )
+
+type M = map[string]any
 
 type Logger struct {
 }
@@ -50,11 +59,17 @@ func (l *Logger) Error(msg string, err error, kv ...any) {
 }
 
 type HttpServer struct {
-	server *http.Server
+	server  *http.Server
+	apiMux  *http.ServeMux
+	rootMux *http.ServeMux
 }
 
 func (h *HttpServer) Init() {
+	h.rootMux = http.NewServeMux()
+	h.apiMux = http.NewServeMux()
+	h.apiMux.Handle("/api/v1", h.rootMux)
 	h.server = &http.Server{
+		Handler:        preMiddleware(h.apiMux),
 		ReadTimeout:    30 * time.Second,
 		WriteTimeout:   120 * time.Second, // Longer for large file downloads
 		IdleTimeout:    120 * time.Second,
@@ -66,22 +81,31 @@ func (h *HttpServer) Start(port int) error {
 		return errors.New("http server start error: port out of range(0-65535)")
 	}
 	h.server.Addr = ":" + strconv.Itoa(port)
-	logger.Info(fmt.Sprintf("Server running on port: %d", port))
+	webDist, err := fs.Sub(static.WebDist, "web-dist")
+	if err != nil {
+		log.Fatalf("Server fail to start: %v", err)
+	}
+	// Use gzipped file server for better large file handling
+	fileServer := gziphandler.GzipHandler(http.FileServer(http.FS(webDist)))
+	h.rootMux.Handle("/", fileServer)
+
+	logger.Info(fmt.Sprintf("Server start on port: %d", port))
 	log.Fatal(h.server.ListenAndServe())
 
 	return nil
 }
 func (h *HttpServer) Add(method string, path string, handler func(w http.ResponseWriter, r *http.Request)) {
-	switch method {
-	case "get":
-
-	}
+	pattern := fmt.Sprintf("%s %s", method, path)
+	h.apiMux.HandleFunc(pattern, handler)
+}
+func (h *HttpServer) All(path string, handler func(w http.ResponseWriter, r *http.Request)) {
+	h.apiMux.HandleFunc(path, handler)
 }
 func (h *HttpServer) Get(path string, handler func(w http.ResponseWriter, r *http.Request)) {
-
+	h.Add("GET", path, handler)
 }
 func (h *HttpServer) Post(path string, handler func(w http.ResponseWriter, r *http.Request)) {
-
+	h.Add("POST", path, handler)
 }
 
 func NewHttpServer() *HttpServer {
@@ -110,8 +134,22 @@ type File struct {
 	Size int64  `json:"size"`
 }
 
+type QuickNote struct {
+	gorm.Model
+	Title   string `json:"name"`
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
 func init() {
 	initLogger()
+	if _, err := rand.Read(authKey); err != nil {
+		log.Fatalf("generate auth key: %v", err)
+	}
+	if _, err := rand.Read(encryptKey); err != nil {
+		log.Fatalf("generate encrypt key: %v", err)
+	}
+	sessionStore = sessions.NewCookieStore(authKey, encryptKey)
 	appConfig.DBPath, _ = os.LookupEnv("DB_PATH")
 	if appConfig.DBPath == "" {
 		appConfig.DBPath = "data.db"
@@ -126,20 +164,19 @@ func init() {
 	if initErr != nil {
 		log.Panicln(initErr)
 	}
-	initErr = db.AutoMigrate(&User{}, &File{})
+	initErr = db.AutoMigrate(&User{}, &File{}, &QuickNote{})
 	if initErr != nil {
 		log.Panicln(initErr)
 	}
 }
 
 func initLogger() {
-	f, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		slog.Error("Create log file failed", err)
+	logFile, initErr = os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if initErr != nil {
+		slog.Error("Create log file failed", "error", initErr)
 		os.Exit(1)
 	}
-	defer f.Close()
-	mw := mulWriter{writers: []io.Writer{os.Stdout, f}}
+	mw := mulWriter{writers: []io.Writer{os.Stdout, logFile}}
 
 	slogInstance = slog.New(slog.NewJSONHandler(mw, &slog.HandlerOptions{
 		AddSource: true,
@@ -149,48 +186,93 @@ func initLogger() {
 	logger.Info("Logger init success")
 }
 
-func main() {
-	runServer()
+func RegisterAuthApi(h *HttpServer) {
+	h.Post("/api/v1/login", func(w http.ResponseWriter, r *http.Request) {
+		username := r.FormValue("username")
+		password := r.FormValue("password")
+		u := &User{}
+		db.First(u, "username = ?", username)
+		if !checkPwd(password, u.Password) {
+			writeForbidden(w, "Username or password incorrect")
+		}
+		s, err := sessionStore.Get(r, sessionName)
+		if err != nil {
+			writeInternalError(w)
+		}
+		s.Values["username"] = username
+		err = sessionStore.Save(r, w, s)
+		writeOk(w)
+	})
+
+	h.Post("/api/v1/signup", func(w http.ResponseWriter, r *http.Request) {
+		if !appConfig.SignupsAllowed {
+			writeForbidden(w, "Signups are disabled")
+			return
+		}
+
+		username := strings.TrimSpace(r.FormValue("username"))
+		password := r.FormValue("password")
+		switch {
+		case username == "":
+			writeJSON(w, http.StatusBadRequest, M{"status": "error", "msg": "Username required"})
+			return
+		case len(password) < 6:
+			writeJSON(w, http.StatusBadRequest, M{"status": "error", "msg": "Password too weak, at least 6 character"})
+			return
+		}
+		err := db.Transaction(func(tx *gorm.DB) error {
+			var exist uint
+
+			if err := db.Model(&User{}).Select("id").Where("username = ?", username).Limit(1).Scan(&exist).Error; err != nil {
+				return err
+			}
+			if exist > 0 {
+				return gorm.ErrDuplicatedKey
+			}
+			hash, err := hashPwd(password)
+			if err != nil {
+				return fmt.Errorf("hashPwd: %w", err)
+			}
+			return tx.Create(&User{Username: username, Password: hash}).Error
+		})
+
+		switch {
+		case errors.Is(err, gorm.ErrDuplicatedKey):
+			writeJSON(w, http.StatusConflict, M{"status": "error", "msg": "User already exists"})
+		case err != nil:
+			logger.Error("signup error", err)
+			writeInternalError(w)
+		default:
+			writeJSON(w, http.StatusOK, M{"status": "ok"})
+		}
+
+	})
 }
 
-func runServer() {
-
-	root := http.NewServeMux()
-
-	api := http.NewServeMux()
-	api.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
-	})
-	api.HandleFunc("/api/v1/signup", func(w http.ResponseWriter, r *http.Request) {
-		if !appConfig.SignupsAllowed {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusForbidden)
-			_ = json.NewEncoder(w).Encode(map[string]any{})
+func RegisterQuickNoteApi(h *HttpServer) {
+	h.Post("/quick-note/update", func(w http.ResponseWriter, r *http.Request) {
+		var qn QuickNote
+		err := json.NewDecoder(r.Body).Decode(&qn)
+		defer r.Body.Close()
+		if err != nil {
+			logger.Error("Json decode quick note error", err)
+			writeInternalError(w)
 		}
+	})
+}
+
+func main() {
+	h := NewHttpServer()
+	h.Init()
+
+	h.All("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
-	root.Handle("/api/v1/", api)
+	RegisterAuthApi(h)
+	RegisterQuickNoteApi(h)
 
-	webDist, err := fs.Sub(static.WebDist, "web-dist")
-	if err != nil {
-		log.Fatalf("Server fail to start: %v", err)
-	}
-	// Use gzipped file server for better large file handling
-	fileServer := gziphandler.GzipHandler(http.FileServer(http.FS(webDist)))
-	root.Handle("/", fileServer)
-
-	// Configure server with proper timeouts
-	server := &http.Server{
-		Addr:           ":18080",
-		Handler:        preMiddleware(root),
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   120 * time.Second, // Longer for large file downloads
-		IdleTimeout:    120 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1MB
-	}
-
-	logger.Info("Server running on port: 18080")
-	log.Fatal(server.ListenAndServe())
+	h.Start(18080)
+	defer logFile.Close()
 }
 
 func preMiddleware(next http.Handler) http.Handler {
@@ -243,6 +325,24 @@ func captureStack(skip int) string {
 	}
 
 	return sb.String()
+}
+
+func writeJSON(w http.ResponseWriter, code int, v any) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+func writeInternalError(w http.ResponseWriter) {
+	writeJSON(w, http.StatusInternalServerError, M{"status": "error", "msg": "Internal error"})
+}
+
+func writeOk(w http.ResponseWriter) {
+	writeJSON(w, http.StatusOK, M{"status": "ok"})
+}
+
+func writeForbidden(w http.ResponseWriter, msg string) {
+	writeJSON(w, http.StatusForbidden, M{"status": "error", "msg": msg})
 }
 
 func hashPwd(pwd string) (string, error) {
